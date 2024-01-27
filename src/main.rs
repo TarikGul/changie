@@ -35,15 +35,22 @@ impl GithubCommits for Vec<types::Commit> {
         let url = Url::parse(&*url)?;
 
         let client = reqwest::Client::new();
-        let res = client
-            .get(url)
-            .headers(construct_headers())
-            .send()
-            .await?
-            .json::<Vec<types::Commit>>()
-            .await?;
+        let res = client.get(url).headers(construct_headers()).send().await?;
 
-        Ok(res)
+        let result = match res.status() {
+            reqwest::StatusCode::OK => {
+                let json = match res.json::<Vec<types::Commit>>().await {
+                    Ok(parsed) => parsed,
+                    Err(err) => panic!("The response did not match the shape we expected: {}", err),
+                };
+
+                json
+            }
+            code => {
+                panic!("Failed with a status code: {:?}", code);
+            }
+        };
+        Ok(result)
     }
 }
 
