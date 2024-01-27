@@ -1,10 +1,10 @@
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
-struct CommitInfo {
+pub struct CommitInfo {
     author: CommitAuthor,
     committer: CommitCommiter,
-    message: String,
+    pub message: String,
     tree: CommitTree,
     url: String,
     comment_count: u32,
@@ -12,27 +12,27 @@ struct CommitInfo {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct CommitAuthor {
+pub struct CommitAuthor {
     name: String,
     email: String,
     date: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct CommitCommiter {
+pub struct CommitCommiter {
     name: String,
     email: String,
     date: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct CommitTree {
+pub struct CommitTree {
     sha: String,
     url: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct CommitVerification {
+pub struct CommitVerification {
     verified: bool,
     reason: String,
     signature: String,
@@ -40,7 +40,7 @@ struct CommitVerification {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Author {
+pub struct Author {
     login: String,
     id: u64,
     node_id: String,
@@ -62,7 +62,7 @@ struct Author {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Committer {
+pub struct Committer {
     login: String,
     id: u64,
     node_id: String,
@@ -84,7 +84,7 @@ struct Committer {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Parents {
+pub struct Parents {
     sha: String,
     url: String,
     html_url: String,
@@ -92,13 +92,13 @@ struct Parents {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Commit {
-    sha: String,
-    node_id: String,
-    commit: CommitInfo,
-    url: String,
-    html_url: String,
-    comments_url: String,
-    author: Author,
-    committer: Committer,
-    parents: Vec<Parents>,
+    pub sha: String,
+    pub node_id: String,
+    pub commit: CommitInfo,
+    pub url: String,
+    pub html_url: String,
+    pub comments_url: String,
+    pub author: Author,
+    pub committer: Committer,
+    pub parents: Vec<Parents>,
 }

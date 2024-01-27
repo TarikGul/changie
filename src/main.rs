@@ -62,11 +62,27 @@ fn construct_headers() -> HeaderMap {
     headers
 }
 
+fn extract_commits(commits: Vec<types::Commit>) -> Vec<types::Commit> {
+    let mut v: Vec<types::Commit> = Vec::new();
+
+    for commit in commits {
+        if commit.commit.message.starts_with("chore(release)") {
+            break;
+        }
+        v.push(commit);
+    }
+
+    v
+}
+
 #[tokio::main]
 async fn main() -> Result<(), ExitFailure> {
     let args = Args::parse();
-    let res = <Vec<types::Commit> as GithubCommits>::get(&args.org, &args.repo).await;
+    let res = <Vec<types::Commit>>::get(&args.org, &args.repo).await;
 
-    println!("{:?}", res);
+    let commits = res.unwrap();
+    let parsed_commits = extract_commits(commits);
+
+    println!("{:?}", parsed_commits);
     Ok(())
 }
