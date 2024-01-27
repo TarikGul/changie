@@ -1,4 +1,9 @@
-mod types;
+use types::commit::Commit;
+use types::releases::LatestRelease;
+mod types {
+    pub mod commit;
+    pub mod releases;
+}
 
 use clap::Parser;
 use exitfailure::ExitFailure;
@@ -22,12 +27,40 @@ struct Args {
     file: String,
 }
 
-trait GithubCommits {
-    async fn get(org: &String, repo: &String) -> Result<Vec<types::Commit>, ExitFailure>;
+impl LatestRelease {
+    async fn get(org: &String, repo: &String) -> Result<LatestRelease, ExitFailure> {
+        let url = format!(
+            "https://api.github.com/repos/{}/{}/releases/latest",
+            org, repo
+        );
+        let url = Url::parse(&*url)?;
+
+        let client = reqwest::Client::new();
+        let res = client.get(url).headers(construct_headers()).send().await?;
+
+        let result = match res.status() {
+            reqwest::StatusCode::OK => {
+                let json = match res.json::<LatestRelease>().await {
+                    Ok(parsed) => parsed,
+                    Err(err) => panic!("The response did not match the shape we expected: {}", err),
+                };
+
+                json
+            }
+            code => {
+                panic!("Failed with a status code: {:?}", code);
+            }
+        };
+        Ok(result)
+    }
 }
 
-impl GithubCommits for Vec<types::Commit> {
-    async fn get(org: &String, repo: &String) -> Result<Vec<types::Commit>, ExitFailure> {
+trait GithubCommits {
+    async fn get(org: &String, repo: &String) -> Result<Vec<Commit>, ExitFailure>;
+}
+
+impl GithubCommits for Vec<Commit> {
+    async fn get(org: &String, repo: &String) -> Result<Vec<Commit>, ExitFailure> {
         let url = format!(
             "https://api.github.com/repos/{}/{}/commits?sha=main",
             org, repo
@@ -39,7 +72,7 @@ impl GithubCommits for Vec<types::Commit> {
 
         let result = match res.status() {
             reqwest::StatusCode::OK => {
-                let json = match res.json::<Vec<types::Commit>>().await {
+                let json = match res.json::<Vec<Commit>>().await {
                     Ok(parsed) => parsed,
                     Err(err) => panic!("The response did not match the shape we expected: {}", err),
                 };
@@ -62,10 +95,11 @@ fn construct_headers() -> HeaderMap {
     headers
 }
 
-fn extract_commits(commits: Vec<types::Commit>) -> Vec<types::Commit> {
-    let mut v: Vec<types::Commit> = Vec::new();
+fn extract_commits(commits: Vec<Commit>) -> Vec<Commit> {
+    let mut v: Vec<Commit> = Vec::new();
 
     for commit in commits {
+        // Once we reach the latest release commit we don't need to include it
         if commit.commit.message.starts_with("chore(release)") {
             break;
         }
@@ -78,11 +112,13 @@ fn extract_commits(commits: Vec<types::Commit>) -> Vec<types::Commit> {
 #[tokio::main]
 async fn main() -> Result<(), ExitFailure> {
     let args = Args::parse();
-    let res = <Vec<types::Commit>>::get(&args.org, &args.repo).await;
-
-    let commits = res.unwrap();
+    let res_commits = <Vec<Commit>>::get(&args.org, &args.repo).await;
+    let commits = res_commits.unwrap();
     let parsed_commits = extract_commits(commits);
 
+    let release_info = LatestRelease::get(&args.org, &args.repo).await;
+
     println!("{:?}", parsed_commits);
+    println!("{:?}", release_info);
     Ok(())
 }
