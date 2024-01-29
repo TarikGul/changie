@@ -5,6 +5,7 @@ mod types {
     pub mod releases;
 }
 
+use chrono;
 use clap::Parser;
 use exitfailure::ExitFailure;
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE, USER_AGENT};
@@ -17,14 +18,14 @@ struct Args {
     /// Org name for the given repository
     #[arg(short, long)]
     org: String,
-
     /// Name of the repository
     #[arg(short, long)]
     repo: String,
-
     /// Number of times to greet
     #[arg(short, long)]
     file: String,
+    #[arg(short, long)]
+    target_version: String,
 }
 
 impl LatestRelease {
@@ -109,6 +110,24 @@ fn extract_commits(commits: Vec<Commit>) -> Vec<Commit> {
     v
 }
 
+fn create_release_header(tag_name: &String, args: &Args) -> String {
+    // ## [0.1.6](https://github.com/paritytech/asset-transfer-api/compare/v0.1.5..v0.1.6)(2024-01-22)
+
+    let date = chrono::offset::Local::now().to_string();
+    let parsed_tag = &tag_name[1..tag_name.len()];
+    let header = format!(
+        "## [{}](https://github.com/{}/{}/compare/{}..{})({})",
+        parsed_tag,
+        &args.org,
+        &args.repo,
+        &tag_name,
+        &args.target_version,
+        &date[0..10]
+    );
+
+    header
+}
+
 #[tokio::main]
 async fn main() -> Result<(), ExitFailure> {
     let args = Args::parse();
@@ -118,7 +137,7 @@ async fn main() -> Result<(), ExitFailure> {
 
     let release_info = LatestRelease::get(&args.org, &args.repo).await;
 
-    println!("{:?}", parsed_commits);
-    println!("{:?}", release_info);
+    let header = create_release_header(&release_info.unwrap().tag_name, &args);
+
     Ok(())
 }
