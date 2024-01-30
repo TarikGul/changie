@@ -1,6 +1,6 @@
 use serde_derive::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CommitInfo {
     author: CommitAuthor,
     committer: CommitCommiter,
@@ -11,27 +11,27 @@ pub struct CommitInfo {
     verification: CommitVerification,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CommitAuthor {
     name: String,
     email: String,
     date: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CommitCommiter {
     name: String,
     email: String,
     date: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CommitTree {
     sha: String,
     url: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CommitVerification {
     verified: bool,
     reason: String,
@@ -39,7 +39,7 @@ pub struct CommitVerification {
     payload: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Author {
     login: String,
     id: u64,
@@ -61,7 +61,7 @@ pub struct Author {
     site_admin: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Committer {
     login: String,
     id: u64,
@@ -83,14 +83,14 @@ pub struct Committer {
     site_admin: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Parents {
     sha: String,
     url: String,
     html_url: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Commit {
     pub sha: String,
     pub node_id: String,
