@@ -8,10 +8,11 @@ mod types {
 use chrono;
 use clap::Parser;
 use exitfailure::ExitFailure;
-use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE, USER_AGENT};
-use reqwest::Url;
-use std::collections::hash_map::Entry;
-use std::collections::HashMap;
+use reqwest::{
+    header::{HeaderMap, HeaderValue, CONTENT_TYPE, USER_AGENT},
+    Url,
+};
+use std::collections::{hash_map::Entry, HashMap};
 use std::fs::{write, File};
 use std::io::{BufRead, BufReader, Error, Write};
 use std::path::Prefix;
@@ -76,11 +77,7 @@ impl SanitizedInfo {
     }
 
     fn merge_changelog_contents(&self) -> String {
-        format!(
-            "{}\n {}",
-            &self.header,
-            &self.body
-        )
+        format!("{}\n {}", &self.header, &self.body)
     }
 
     fn extract_commits(&mut self) {
