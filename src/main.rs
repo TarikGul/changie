@@ -10,6 +10,8 @@ use clap::Parser;
 use exitfailure::ExitFailure;
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE, USER_AGENT};
 use reqwest::Url;
+use std::collections::hash_map::Entry;
+use std::collections::HashMap;
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
@@ -110,6 +112,64 @@ fn extract_commits(commits: Vec<Commit>) -> Vec<Commit> {
     v
 }
 
+fn parse_commits(commits: Vec<Commit>, args: &Args) -> String {
+    let mut h: HashMap<&str, Vec<String>> = HashMap::new();
+    for c in commits.iter() {
+        let prefix = c.commit.message.split(":").collect::<Vec<_>>()[0]
+            .split("(")
+            .collect::<Vec<_>>()[0];
+        let v = c.commit.message.lines().collect::<Vec<_>>()[0]
+            .split(" ")
+            .collect::<Vec<_>>();
+        let message = v[0..v.len() - 1].join("");
+        let pr_num = v.last().copied().unwrap();
+        let pr_link = format!(
+            "https://github.com/{}/{}/pull/{}",
+            &args.org,
+            &args.repo,
+            &pr_num[2..pr_num.len() - 1]
+        );
+        let pr_sha_link = format!(
+            "https://github.com/{}/{}/commit/{}",
+            &args.org, &args.repo, c.sha
+        );
+        let key = format!(
+            "- {} ([#{}]({})) ([{}]({}))",
+            message,
+            &pr_num[2..pr_num.len() - 1],
+            pr_link,
+            &c.sha[0..6],
+            pr_sha_link
+        );
+
+        match h.entry(prefix) {
+            Entry::Vacant(e) => {
+                e.insert(vec![key]);
+            }
+            Entry::Occupied(mut e) => e.get_mut().push(key),
+        }
+    }
+
+    let mut body = String::from("");
+    let keys = h.keys().collect::<Vec<&&str>>();
+    for k in keys {
+        let commit_header = "## ".to_owned() + &capitalize(k) + "\n\n";
+        let v = h.get(k).unwrap();
+        let joined_commits = v.join("\n");
+        body = body + &commit_header + &joined_commits;
+    }
+
+    body
+}
+
+fn capitalize(s: &str) -> String {
+    let mut c = s.chars();
+    match c.next() {
+        None => String::new(),
+        Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+    }
+}
+
 fn create_release_header(tag_name: &String, args: &Args) -> String {
     // ## [0.1.6](https://github.com/paritytech/asset-transfer-api/compare/v0.1.5..v0.1.6)(2024-01-22)
 
@@ -133,10 +193,10 @@ async fn main() -> Result<(), ExitFailure> {
     let args = Args::parse();
     let res_commits = <Vec<Commit>>::get(&args.org, &args.repo).await;
     let commits = res_commits.unwrap();
-    let parsed_commits = extract_commits(commits);
-
+    let extracted_commits = extract_commits(commits);
     let release_info = LatestRelease::get(&args.org, &args.repo).await;
 
+    let body = parse_commits(extracted_commits, &args);
     let header = create_release_header(&release_info.unwrap().tag_name, &args);
 
     Ok(())
