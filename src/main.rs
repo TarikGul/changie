@@ -27,7 +27,7 @@ struct Args {
     /// Name of the repository
     #[arg(short, long)]
     repo: String,
-    /// Number of times to greet
+    /// File path to the CHANGELOG
     #[arg(short, long)]
     file_path: String,
     #[arg(short, long)]
