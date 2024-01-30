@@ -15,7 +15,7 @@ use reqwest::{
 use std::collections::{hash_map::Entry, HashMap};
 use std::fs::{write, File};
 use std::io::{BufRead, BufReader, Error, Write};
-use std::path::Prefix;
+use std::path::Path;
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
@@ -42,12 +42,10 @@ struct CommitMessageParts {
 #[derive(Debug)]
 struct SanitizedInfo {
     commits: Vec<Commit>,
-    pub header: String,
-    pub body: String,
 }
 
 impl SanitizedInfo {
-    fn new(&mut self, args: Args, tag_name: &String) {
+    fn create_changelog_contents(&mut self, args: &Args, tag_name: &String) -> String {
         self.extract_commits();
         let mut h: HashMap<String, Vec<String>> = HashMap::new();
         for c in self.commits.iter() {
@@ -63,6 +61,7 @@ impl SanitizedInfo {
             }
         }
 
+        let header = self.create_release_header(tag_name, &args);
         let mut body = String::from("");
         let keys = h.keys().collect::<Vec<&String>>();
         for k in keys {
@@ -72,12 +71,11 @@ impl SanitizedInfo {
             body = body + &commit_header + &joined_commits;
         }
 
-        self.body = body;
-        self.header = self.create_release_header(tag_name, &args);
+        self.merge_changelog_contents(&header, &body)
     }
 
-    fn merge_changelog_contents(&self) -> String {
-        format!("{}\n {}", &self.header, &self.body)
+    fn merge_changelog_contents(&self, header: &String, body: &String) -> String {
+        format!("{}\n {}", &header, &body)
     }
 
     fn extract_commits(&mut self) {
@@ -255,11 +253,10 @@ async fn main() -> Result<(), ExitFailure> {
     let release_info = LatestRelease::get(&args.org, &args.repo).await;
     let mut info = SanitizedInfo {
         commits: res_commits.unwrap(),
-        header: "".to_string(),
-        body: "".to_string(),
     };
-    SanitizedInfo::new(&mut info, args, &release_info.unwrap().tag_name);
-    let changelog_contents = SanitizedInfo::merge_changelog_contents(&info);
+    let changelog_contents = SanitizedInfo::create_changelog_contents(&mut info, &args, &release_info.unwrap().tag_name);
+
+    let path = Path::new(&args.file_path);
 
     println!("{:?}", changelog_contents);
     // let _ = write_to_file(&args.file_path, &content);
