@@ -16,7 +16,7 @@ use std::collections::{hash_map::Entry, HashMap};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
 
-/// Simple program to greet a person
+/// CLI to generate release docs for a CHANGELOG
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
@@ -29,6 +29,7 @@ struct Args {
     /// File path to the CHANGELOG
     #[arg(short, long)]
     file_path: String,
+    /// Target version for the release. Format: vXX.XX.XX
     #[arg(short, long)]
     target_version: String,
 }
