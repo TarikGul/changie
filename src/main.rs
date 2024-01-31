@@ -13,9 +13,8 @@ use reqwest::{
     Url,
 };
 use std::collections::{hash_map::Entry, HashMap};
-use std::fs::{write, File};
-use std::io::{BufRead, BufReader, Error, Write};
-use std::path::Path;
+use std::fs::File;
+use std::io::{Read, Seek, SeekFrom, Write};
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
@@ -112,9 +111,9 @@ impl SanitizedInfo {
 
     fn create_release_header(&self, tag_name: &String, args: &Args) -> String {
         let date = chrono::offset::Local::now().to_string();
-        let parsed_tag = &tag_name[1..tag_name.len()];
+        let parsed_tag = &args.target_version[1..args.target_version.len()];
         let header = format!(
-            "## [{}](https://github.com/{}/{}/compare/{}..{})({})",
+            "\n## [{}](https://github.com/{}/{}/compare/{}..{})({})\n",
             parsed_tag,
             &args.org,
             &args.repo,
@@ -147,11 +146,11 @@ impl SanitizedInfo {
         let pr_sha_link = self.create_sha_link(&args, &c.sha);
 
         format!(
-            "- {} ([#{}]({})) ([{}]({}))",
+            "- {} ([#{}]({})) ([{}]({}))\n",
             m_parts.message,
             &m_parts.pr_num[2..m_parts.pr_num.len() - 1],
             pr_link,
-            &c.sha[0..6],
+            &c.sha[0..7],
             pr_sha_link
         )
     }
@@ -233,15 +232,19 @@ fn capitalize(s: &str) -> String {
     }
 }
 
-fn write_to_file(path: &String, content: &String) -> Result<(), Error> {
-    let input = File::open(path)?;
-    let buffered = BufReader::new(input);
+fn splice_data_into_file(path: &str, splice_at: u64, data: &[u8]) -> Result<(), String> {
+    let mut file = File::options().read(true).write(true).open(path).unwrap();
 
-    for line in buffered.lines() {
-        println!("{}", line?);
+    let seek = SeekFrom::Start(splice_at);
+    file.seek(seek).unwrap();
+
+    let mut buf: Vec<u8> = Vec::new();
+    file.read_to_end(&mut buf).unwrap();
+    file.seek(seek).unwrap();
+
+    if file.write_all(data).is_err() || file.write_all(&buf).is_err() {
+        return Err("Error writing data to file".to_string());
     }
-
-    write(path, content)?;
 
     Ok(())
 }
@@ -254,11 +257,10 @@ async fn main() -> Result<(), ExitFailure> {
     let mut info = SanitizedInfo {
         commits: res_commits.unwrap(),
     };
-    let changelog_contents = SanitizedInfo::create_changelog_contents(&mut info, &args, &release_info.unwrap().tag_name);
+    let changelog_contents =
+        SanitizedInfo::create_changelog_contents(&mut info, &args, &release_info.unwrap().tag_name);
 
-    let path = Path::new(&args.file_path);
-
-    println!("{:?}", changelog_contents);
-    // let _ = write_to_file(&args.file_path, &content);
+    // The splice_at is hardcoded to 12 since it's after the initial header `# Changelog`.
+    let _ = splice_data_into_file(&args.file_path, 12, changelog_contents.as_bytes());
     Ok(())
 }
