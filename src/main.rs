@@ -263,7 +263,6 @@ mod test {
 
     #[test]
     fn test_capitalize() {
-        let str = String::from("this is a test");
-        assert_eq!(capitalize(&str), "This is a test");
+        assert_eq!(capitalize("this is a test"), "This is a test");
     }
 }
