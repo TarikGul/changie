@@ -67,7 +67,7 @@ impl SanitizedInfo {
         for k in keys {
             let commit_header = "## ".to_owned() + &capitalize(k) + "\n\n";
             let v = h.get(k).unwrap();
-            let joined_commits = v.join("\n") + "\n";
+            let joined_commits = v.join("") + "\n";
             body = body + &commit_header + &joined_commits;
         }
 
@@ -75,7 +75,7 @@ impl SanitizedInfo {
     }
 
     fn merge_changelog_contents(&self, header: &String, body: &String) -> String {
-        format!("{}\n {}", &header, &body)
+        format!("{}\n{}", &header, &body)
     }
 
     fn extract_commits(&mut self) {
