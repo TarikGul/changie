@@ -12,6 +12,7 @@ use reqwest::{
     header::{HeaderMap, HeaderValue, CONTENT_TYPE, USER_AGENT},
     Url,
 };
+use serde::Deserialize;
 use std::collections::{hash_map::Entry, HashMap};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
@@ -163,25 +164,7 @@ impl LatestRelease {
             "https://api.github.com/repos/{}/{}/releases/latest",
             org, repo
         );
-        let url = Url::parse(&*url)?;
-
-        let client = reqwest::Client::new();
-        let res = client.get(url).headers(construct_headers()).send().await?;
-
-        let result = match res.status() {
-            reqwest::StatusCode::OK => {
-                let json = match res.json::<LatestRelease>().await {
-                    Ok(parsed) => parsed,
-                    Err(err) => panic!("The response did not match the shape we expected: {}", err),
-                };
-
-                json
-            }
-            code => {
-                panic!("Failed with a status code: {:?}", code);
-            }
-        };
-        Ok(result)
+        http_get::<LatestRelease>(&url).await
     }
 }
 
@@ -195,26 +178,34 @@ impl GithubCommits for Vec<Commit> {
             "https://api.github.com/repos/{}/{}/commits?sha=main",
             org, repo
         );
-        let url = Url::parse(&*url)?;
-
-        let client = reqwest::Client::new();
-        let res = client.get(url).headers(construct_headers()).send().await?;
-
-        let result = match res.status() {
-            reqwest::StatusCode::OK => {
-                let json = match res.json::<Vec<Commit>>().await {
-                    Ok(parsed) => parsed,
-                    Err(err) => panic!("The response did not match the shape we expected: {}", err),
-                };
-
-                json
-            }
-            code => {
-                panic!("Failed with a status code: {:?}", code);
-            }
-        };
-        Ok(result)
+        http_get::<Vec<Commit>>(&url).await
     }
+}
+
+async fn http_get<T: for<'a> Deserialize<'a>>(url: &String) -> Result<T, ExitFailure> {
+    let parsed_url = Url::parse(&*url)?;
+
+    let client = reqwest::Client::new();
+    let res = client
+        .get(parsed_url)
+        .headers(construct_headers())
+        .send()
+        .await?;
+
+    let result = match res.status() {
+        reqwest::StatusCode::OK => {
+            let json = match res.json::<T>().await {
+                Ok(parsed) => parsed,
+                Err(err) => panic!("The response did not match the shape we expected: {}", err),
+            };
+
+            json
+        }
+        code => {
+            panic!("Failed with a status code: {:?}", code);
+        }
+    };
+    Ok(result)
 }
 
 fn construct_headers() -> HeaderMap {
@@ -264,4 +255,15 @@ async fn main() -> Result<(), ExitFailure> {
     // The splice_at is hardcoded to 12 since it's after the initial header `# Changelog`.
     let _ = splice_data_into_file(&args.file_path, 12, changelog_contents.as_bytes());
     Ok(())
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_capitalize() {
+        let str = String::from("this is a test");
+        assert_eq!(capitalize(&str), "This is a test");
+    }
 }
