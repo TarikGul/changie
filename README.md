@@ -25,13 +25,21 @@ $ target/release/changie <args>
 
 ### CLI args
 ```
-Usage: changie --org <ORG> --repo <REPO> --file-path <FILE_PATH> --target-version <TARGET_VERSION>
+Usage: changie [OPTIONS] --org <ORG> --repo <REPO> --file-path <FILE_PATH> --target-version <TARGET_VERSION>
 
 Options:
-  -o, --org <ORG>                        Org name for the given repository
-  -r, --repo <REPO>                      Name of the repository
-  -f, --file-path <FILE_PATH>            File path to the CHANGELOG
-  -t, --target-version <TARGET_VERSION>  Target version for the release. Format: vXX.XX.XX
-  -h, --help                             Print help
-  -V, --version                          Print version
+  -o, --org <ORG>
+          Org name for the given repository
+  -r, --repo <REPO>
+          Name of the repository
+  -f, --file-path <FILE_PATH>
+          File path to the CHANGELOG
+  -t, --target-version <TARGET_VERSION>
+          Target version for the release. Format: vXX.XX.XX
+  -s, --sha <SHA>
+          Sha or branch to start commits at. Defaults to 'main' [default: main]
+  -h, --help
+          Print help
+  -V, --version
+          Print version                         Print version
 ```
