@@ -66,7 +66,7 @@ impl SanitizedInfo {
         let mut body = String::from("");
         let keys = h.keys().collect::<Vec<&String>>();
         for k in keys {
-            let commit_header = "## ".to_owned() + &capitalize(k) + "\n\n";
+            let commit_header = "### ".to_owned() + &capitalize(k) + "\n\n";
             let v = h.get(k).unwrap();
             let joined_commits = v.join("") + "\n";
             body = body + &commit_header + &joined_commits;
