@@ -33,6 +33,9 @@ struct Args {
     /// Target version for the release. Format: vXX.XX.XX
     #[arg(short, long)]
     target_version: String,
+    /// Sha or branch to start commits at. Defaults to 'main'.
+    #[arg(short, long, default_value = "main")]
+    sha: String,
 }
 
 struct CommitMessageParts {
@@ -169,14 +172,14 @@ impl LatestRelease {
 }
 
 trait GithubCommits {
-    async fn get(org: &String, repo: &String) -> Result<Vec<Commit>, ExitFailure>;
+    async fn get(org: &String, repo: &String, sha: &String) -> Result<Vec<Commit>, ExitFailure>;
 }
 
 impl GithubCommits for Vec<Commit> {
-    async fn get(org: &String, repo: &String) -> Result<Vec<Commit>, ExitFailure> {
+    async fn get(org: &String, repo: &String, sha: &String) -> Result<Vec<Commit>, ExitFailure> {
         let url = format!(
-            "https://api.github.com/repos/{}/{}/commits?sha=main",
-            org, repo
+            "https://api.github.com/repos/{}/{}/commits?sha={}",
+            org, repo, sha
         );
         http_get::<Vec<Commit>>(&url).await
     }
@@ -244,7 +247,7 @@ fn splice_data_into_file(path: &str, splice_at: u64, data: &[u8]) -> Result<(), 
 #[tokio::main]
 async fn main() -> Result<(), ExitFailure> {
     let args = Args::parse();
-    let res_commits = <Vec<Commit>>::get(&args.org, &args.repo).await;
+    let res_commits = <Vec<Commit>>::get(&args.org, &args.repo, &args.sha).await;
     let release_info = LatestRelease::get(&args.org, &args.repo).await;
     let mut info = SanitizedInfo {
         commits: res_commits.unwrap(),
