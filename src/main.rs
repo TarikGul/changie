@@ -36,6 +36,9 @@ struct Args {
     /// Sha or branch to start commits at. Defaults to 'main'.
     #[arg(short, long, default_value = "main")]
     sha: String,
+    /// The position in bytes to which you would like the CHANGELOG information to start
+    #[arg(short, long, default_value = "12")]
+    splice_at: String,
 }
 
 struct CommitMessageParts {
@@ -254,9 +257,10 @@ async fn main() -> Result<(), ExitFailure> {
     };
     let changelog_contents =
         SanitizedInfo::create_changelog_contents(&mut info, &args, &release_info.unwrap().tag_name);
+    let splice_at = args.splice_at.parse::<u64>().or_else(|e| Err(e))?;
 
     // The splice_at is hardcoded to 12 since it's after the initial header `# Changelog`.
-    let _ = splice_data_into_file(&args.file_path, 12, changelog_contents.as_bytes());
+    let _ = splice_data_into_file(&args.file_path, splice_at, changelog_contents.as_bytes());
     Ok(())
 }
 
